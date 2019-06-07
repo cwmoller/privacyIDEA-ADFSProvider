@@ -1,5 +1,11 @@
 # Install the provider
 
+param (
+    [switch]$primary = $true 
+)
+
+$location = "C:\Program Files\privacyIDEAProvider"
+
 function Gac-Util
 {
     param (
@@ -35,10 +41,12 @@ if (!([System.Diagnostics.EventLog]::SourceExists("privacyIDEAProvider")))
     Write-Host "Log source created"
 }
 
-Set-location "C:\Program Files\privacyIDEAProvider"
-Gac-Util "C:\Program Files\privacyIDEAProvider\privacyIDEA-ADFSProvider.dll"
+Set-location ${location}
+Gac-Util "${location}\privacyIDEA-ADFSProvider.dll"
 
-$typeName = "privacyIDEAADFSProvider.Adapter, privacyIDEA-ADFSProvider, Version=1.3.4.0, Culture=neutral, PublicKeyToken=bf6bdb60967d5ecc"
-Register-AdfsAuthenticationProvider -TypeName $typeName -Name "privacyIDEA-ADFSProvider" -ConfigurationFilePath "C:\Program Files\privacyIDEAProvider\config.xml" -Verbose
+if ($primary) {
+	$typeName = "privacyIDEAADFSProvider.Adapter, privacyIDEA-ADFSProvider, Version=1.3.4.1, Culture=neutral, PublicKeyToken=a11686e933c2d195"
+	Register-AdfsAuthenticationProvider -TypeName $typeName -Name "privacyIDEA-ADFSProvider" -ConfigurationFilePath "${location}\config.xml" -Verbose
+}
 
 Restart-Service adfssrv
