@@ -6,7 +6,7 @@ param (
 
 $location = "C:\Program Files\privacyIDEAProvider"
 
-if ($primary) {}
+if ($primary) {
 	Unregister-AdfsAuthenticationProvider -Name "privacyIDEA-ADFSProvider"
 }
 Set-location ${location}
