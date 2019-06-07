@@ -32,7 +32,7 @@ namespace privacyIDEAADFSProvider
         {
             //get { return new <instance of IAuthenticationAdapterMetadata derived class>; }
             get {
-                AdapterMetadata meta = new AdapterMetadata();
+                AdapterMetadataUPN meta = new AdapterMetadataUPN();
                 meta.adapterversion = version;
                 return meta;
             }

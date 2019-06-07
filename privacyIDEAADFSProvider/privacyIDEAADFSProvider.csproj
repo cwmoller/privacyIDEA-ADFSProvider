@@ -51,6 +51,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Adapter.cs" />
+    <Compile Include="AdapterMetadataUPN.cs" />
     <Compile Include="AdapterMetadata.cs" />
     <Compile Include="AdapterPresentationForm.cs" />
     <Compile Include="config.cs" />
