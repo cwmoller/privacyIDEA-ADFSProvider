@@ -5,6 +5,8 @@ param (
 )
 
 $location = "C:\Program Files\privacyIDEAProvider"
+$provider = "privacyIDEA-ADFSProvider"
+$version = "1.3.4.2"
 
 function Gac-Util
 {
@@ -45,8 +47,10 @@ Set-location ${location}
 Gac-Util "${location}\privacyIDEA-ADFSProvider.dll"
 
 if ($primary) {
-	$typeName = "privacyIDEAADFSProvider.Adapter, privacyIDEA-ADFSProvider, Version=1.3.4.1, Culture=neutral, PublicKeyToken=a11686e933c2d195"
-	Register-AdfsAuthenticationProvider -TypeName $typeName -Name "privacyIDEA-ADFSProvider" -ConfigurationFilePath "${location}\config.xml" -Verbose
+	$typeName = "privacyIDEAADFSProvider.Adapter, ${provider}, Version=${version}, Culture=neutral, PublicKeyToken=a11686e933c2d195"
+	Register-AdfsAuthenticationProvider -TypeName $typeName -Name ${provider} -ConfigurationFilePath "${location}\config.xml" -Verbose
+
+	Set-AdfsGlobalAuthenticationPolicy -AdditionalAuthenticationProvider ${provider}
 }
 
 Restart-Service adfssrv
