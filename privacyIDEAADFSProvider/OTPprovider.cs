@@ -111,20 +111,19 @@ namespace privacyIDEAADFSProvider
                 using (WebClient client = new WebClient())
                 {
                     client.Headers.Set("Authorization", token);
-                    byte[] response =
-                    client.UploadValues(URL + "/token", new NameValueCollection()
-                    {
-                           { "user", OTPuser},
-                           { "tokenrealm ", realm},
-                    });
+                    string request = String.Format(URL + "/token/?user={0}&realm={1}", Uri.EscapeDataString(OTPuser), Uri.EscapeDataString(realm));
+#if DEBUG
+                    Debug.WriteLine(String.Format("{0} hasToken() request: {1})", Adapter.debugPrefix, request));
+#endif
+                    byte[] response = client.DownloadData(request);
                     responseString = Encoding.UTF8.GetString(response);
 #if DEBUG
                     Debug.WriteLine(String.Format("{0} hasToken() responseString: {1})", Adapter.debugPrefix, responseString));
 #endif
                     // get list from response
-                    string data = getJsonNode(responseString, "data");
+                    string data = getJsonNode(responseString, "tokens");
 #if DEBUG
-                    Debug.WriteLine(String.Format("{0} hasToken() data: {1})", Adapter.debugPrefix, data));
+                    Debug.WriteLine(String.Format("{0} hasToken() tokens: {1})", Adapter.debugPrefix, data));
 #endif
                     return (data.Length > 0);
                 }
@@ -296,48 +295,6 @@ namespace privacyIDEAADFSProvider
                 imgs.Add(element.Parent.Name.ToString(), element.Value);
             }
             return imgs;
-        }
-
-        /////////////////////////////////////////////////////////////////
-        // ------- HELPER ------ 
-        /////////////////////////////////////////////////////////////////
-        /// <summary>
-        /// Validates the pin for a numeric only string
-        /// </summary>
-        /// <param name="str">string to validate</param>
-        /// <returns>True if string only contains numbers</returns>
-        private bool IsDigitsOnly(string str)
-        {
-            foreach (char c in str)
-            {
-                if (c < '0' || c > '9')
-                    return false;
-            }
-            if (str.Length > 8) return false;
-
-            return true;
-        }
-        /// <summary>
-        /// Get json information form a defined node
-        /// </summary>
-        /// <param name="jsonResponse">json string</param>
-        /// <param name="nodename">node name of the json field</param>
-        /// <returns>returns the value (inner text) from the defined node</returns>
-        private string getJsonNode(string jsonResponse, string nodename)
-        {
-            try
-            {
-                var xml = XDocument.Load(JsonReaderWriterFactory.CreateJsonReader(Encoding.ASCII.GetBytes(jsonResponse), new XmlDictionaryReaderQuotas()));
-                return xml.Descendants(nodename).Single().Value;
-            }
-            catch(Exception ex)
-            {
-#if DEBUG
-                Debug.WriteLine(System.String.Format("{0} getJsonNode() exception: {1})", Adapter.debugPrefix, ex.Message));
-#endif
-                LogEvent(EventContext.ID3Aprovider, "getJsonNode: " + ex.Message + "\n\n" + ex, EventLogEntryType.Error);
-                return "";
-            }
         }
 
     }
