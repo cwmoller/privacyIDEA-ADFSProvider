@@ -4,7 +4,7 @@ using Microsoft.IdentityServer.Web.Authentication.External;
 
 namespace privacyIDEAADFSProvider
 {
-    class AdapterMetadata : IAuthenticationAdapterMetadata
+    internal class AdapterMetadata : IAuthenticationAdapterMetadata
     {
         public string adapterversion { get; set; }
         //Returns the name of the provider that will be shown in the AD FS management UI (not visible to end users)

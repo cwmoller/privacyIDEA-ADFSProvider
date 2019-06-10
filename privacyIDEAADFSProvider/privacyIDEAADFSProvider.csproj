@@ -54,6 +54,7 @@
     <Compile Include="AdapterMetadataUPN.cs" />
     <Compile Include="AdapterMetadata.cs" />
     <Compile Include="AdapterPresentationForm.cs" />
+    <Compile Include="Helper.cs" />
     <Compile Include="config.cs" />
     <Compile Include="OTPprovider.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

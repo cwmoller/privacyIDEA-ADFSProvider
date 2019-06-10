@@ -4,13 +4,12 @@ using System.Globalization;
 
 namespace privacyIDEAADFSProvider
 {
-    class AdapterMetadataUPN : IAuthenticationAdapterMetadata
+    internal class AdapterMetadataUPN : IAuthenticationAdapterMetadata
     {
-        public string adapterversion { get; set; }
         //Returns the name of the provider that will be shown in the AD FS management UI (not visible to end users)
         public string AdminName
         {
-            get { return "privacyIDEA-ADFSProvider_"+adapterversion; }
+            get { return "privacyIDEA MFA provider for ADFS"; }
         }
 
         //Returns an array of strings containing URIs indicating the set of authentication methods implemented by the adapter 

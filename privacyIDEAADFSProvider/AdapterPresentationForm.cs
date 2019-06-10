@@ -2,7 +2,7 @@
 
 namespace privacyIDEAADFSProvider
 {
-    class AdapterPresentationForm : IAdapterPresentationForm
+    internal class AdapterPresentationForm : IAdapterPresentationForm
     {
         public ADFSinterface[] inter;
         private bool error = false;

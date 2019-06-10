@@ -8,13 +8,13 @@ using System.Text;
 using System.Runtime.Serialization.Json;
 using System.Xml;
 using System.Xml.Linq;
+using static privacyIDEAADFSProvider.Helper;
 
 namespace privacyIDEAADFSProvider
 {
     public class OTPprovider
     {
         private string URL;
-        private bool isChallengeToken = false;
         /// <summary>
         /// Class creates a OTPprovide for the privacyIDEA system
         /// </summary>
@@ -33,19 +33,18 @@ namespace privacyIDEAADFSProvider
         /// <returns>true if the pin is correct</returns>
         public bool getAuthOTP(string OTPuser, string OTPpin, string realm, string transaction_id)
         {
-            if (isChallengeToken)
+#if DEBUG
+            Debug.WriteLine(String.Format("{0} getAuthOTP({1}, {2}, {3}, {4})", Adapter.debugPrefix, OTPuser, OTPpin, realm, transaction_id));
+#endif
+            // first request with transaction_id
+            if (validateOTP(OTPuser, OTPpin, realm, transaction_id))
             {
-                // first request with transaction_id
-                bool request_with_id = validateOTP(OTPuser, OTPpin, realm, transaction_id);
-                // first ture retrun direct (SMS or Mail token)
-                if (request_with_id) return true;
+                // first true return direct (SMS or Mail token)
+                return true;
+            } else
+            {
                 // second request without transaction_id (TOTP)
-                else return validateOTP(OTPuser, OTPpin, realm, null);
-            }
-            else
-            {
-                // if no challenge token for the user exists request without
-                return validateOTP(OTPuser, OTPpin, realm, transaction_id);
+                return validateOTP(OTPuser, OTPpin, realm, null);
             }
         }
 
@@ -59,6 +58,9 @@ namespace privacyIDEAADFSProvider
         /// <returns>true if the pin is correct</returns>
         private bool validateOTP(string OTPuser, string OTPpin, string realm, string transaction_id)
         {
+#if DEBUG
+            Debug.WriteLine(String.Format("{0} validateOTP({1}, {2}, {3}, {4})", Adapter.debugPrefix, OTPuser, OTPpin, realm, transaction_id));
+#endif
             string responseString = "";
             try
             {
@@ -84,9 +86,58 @@ namespace privacyIDEAADFSProvider
             }
             catch (WebException wex)
             {
+#if DEBUG
+                Debug.WriteLine(System.String.Format("{0} validateOTP() exception: {1})", Adapter.debugPrefix, wex.Message));
+#endif
                 LogEvent(EventContext.ID3Aprovider, "validateOTP: " + wex.Message + "\n\n" + wex, EventLogEntryType.Error);
                 return false;
             }
+        }
+        /// <summary>
+        /// Check whether user has an enrolled token in PID3
+        /// </summary>
+        /// <param name="OTPuser">User name for the token</param>
+        /// <param name="realm">Domain/realm name</param>
+        /// <param name="token">Admin token</param>
+        /// <returns>true or false</returns>
+        public bool hasToken(string OTPuser, string realm, string token)
+        {
+#if DEBUG
+            Debug.WriteLine(String.Format("{0} hasToken({1}, {2}, {3})", Adapter.debugPrefix, OTPuser, realm, token));
+#endif
+            string responseString = "";
+            try
+            {
+                using (WebClient client = new WebClient())
+                {
+                    client.Headers.Set("Authorization", token);
+                    byte[] response =
+                    client.UploadValues(URL + "/token", new NameValueCollection()
+                    {
+                           { "user", OTPuser},
+                           { "tokenrealm ", realm},
+                    });
+                    responseString = Encoding.UTF8.GetString(response);
+#if DEBUG
+                    Debug.WriteLine(String.Format("{0} hasToken() responseString: {1})", Adapter.debugPrefix, responseString));
+#endif
+                    // get list from response
+                    string data = getJsonNode(responseString, "data");
+#if DEBUG
+                    Debug.WriteLine(String.Format("{0} hasToken() data: {1})", Adapter.debugPrefix, data));
+#endif
+                    return (data.Length > 0);
+                }
+            }
+            catch (WebException wex)
+            {
+#if DEBUG
+                Debug.WriteLine(System.String.Format("{0} hasToken() exception: {1})", Adapter.debugPrefix, wex.Message));
+#endif
+                LogEvent(EventContext.ID3Aprovider, "hasToken: " + wex.Message + "\n\n" + wex, EventLogEntryType.Error);
+                return false;
+            }
+
         }
         /// <summary>
         /// Trigger for a otp challenge to the PID3
@@ -114,12 +165,14 @@ namespace privacyIDEAADFSProvider
                     string transaction_id = getJsonNode(responseString, "transaction_ids");
                     if (transaction_id.Length > 20) transaction_id = transaction_id.Remove(20);
                     // check if use has challenge token
-                    if (getJsonNode(responseString, "value") != "0") this.isChallengeToken = true;
                     return transaction_id;
                 }
             }
             catch (WebException wex)
             {
+#if DEBUG
+                Debug.WriteLine(System.String.Format("{0} triggerChallenge() exception: {1})", Adapter.debugPrefix, wex.Message));
+#endif
                 LogEvent(EventContext.ID3Aprovider, "triggerChallenge: " + wex.Message + "\n\n" + wex, EventLogEntryType.Error);
                 return "";
             }
@@ -163,6 +216,9 @@ namespace privacyIDEAADFSProvider
         /// <returns>Base64 coded token QR image</returns>
         public Dictionary<string, string> enrollHOTPToken(string OTPuser, string realm, string token)
         {
+#if DEBUG
+            Debug.WriteLine(String.Format("{0} enrollHOTPToken({1}, {2}, {3})", Adapter.debugPrefix, OTPuser, realm, token));
+#endif
             string responseString = "";
             try
             {
@@ -170,11 +226,12 @@ namespace privacyIDEAADFSProvider
                 {
                     client.Headers.Set("PI-Authorization", token);
                     byte[] response =
-                    client.UploadValues(URL + "/token/init?genkey=1", new NameValueCollection()
+                    client.UploadValues(URL + "/token/init", new NameValueCollection()
                     {
+                        { "genkey", "1" },
                         { "type ", "hotp" },
                         { "user", OTPuser},
-                        {"realm", realm }
+                        { "realm", realm }
                     });
                     responseString = Encoding.UTF8.GetString(response);
                 }
@@ -182,6 +239,9 @@ namespace privacyIDEAADFSProvider
             }
             catch (WebException wex)
             {
+#if DEBUG
+                Debug.WriteLine(System.String.Format("{0} enrollHOTPToken() exception: {1})", Adapter.debugPrefix, wex.Message));
+#endif
                 LogEvent(EventContext.ID3Aprovider, "enrollHOTPToken: " + wex.Message + "\n\n" + wex, EventLogEntryType.Error);
                 //return getQRimage(responseString);
                 return new Dictionary<string, string>();
@@ -215,6 +275,9 @@ namespace privacyIDEAADFSProvider
             }
             catch (WebException wex)
             {
+#if DEBUG
+                Debug.WriteLine(System.String.Format("{0} enrollSMSToken() exception: {1})", Adapter.debugPrefix, wex.Message));
+#endif
                 LogEvent(EventContext.ID3Aprovider, "enrollSMSToken: " + wex.Message + "\n\n"+ wex, EventLogEntryType.Error);
                 return false;
             }
@@ -228,10 +291,9 @@ namespace privacyIDEAADFSProvider
         {
             Dictionary<string, string> imgs = new Dictionary<string, string>();
             var xml = XDocument.Load(JsonReaderWriterFactory.CreateJsonReader(Encoding.ASCII.GetBytes(jsonResponse), new XmlDictionaryReaderQuotas()));
-            int counter = 0;
             foreach (XElement element in xml.Descendants("img"))
             {
-                imgs.Add(counter++.ToString(), element.Value);
+                imgs.Add(element.Parent.Name.ToString(), element.Value);
             }
             return imgs;
         }
@@ -270,32 +332,14 @@ namespace privacyIDEAADFSProvider
             }
             catch(Exception ex)
             {
+#if DEBUG
+                Debug.WriteLine(System.String.Format("{0} getJsonNode() exception: {1})", Adapter.debugPrefix, ex.Message));
+#endif
                 LogEvent(EventContext.ID3Aprovider, "getJsonNode: " + ex.Message + "\n\n" + ex, EventLogEntryType.Error);
                 return "";
             }
         }
-        /// <summary>
-        /// Helper: Creates a log entry in the MS EventLog under Applications
-        /// </summary>
-        /// <param name="context"></param>
-        /// <param name="message"></param>
-        /// <param name="type"></param>
-        public void LogEvent(EventContext context, string message, EventLogEntryType type)
-        {
-            int eventID = 0;
-            if (context == EventContext.ID3Aprovider) eventID = 9901;
-            if (context == EventContext.ID3A_ADFSadapter) eventID = 9902;
-            using (EventLog eventLog = new EventLog("AD FS/Admin"))
-            {
-                    eventLog.Source = "privacyIDEAProvider";
-                    eventLog.WriteEntry(message, type, eventID, 0);
-             }
-        }
-        public enum EventContext
-        {
-            ID3Aprovider,
-            ID3A_ADFSadapter
-        }
+
     }
     public class WrongOTPExeption : Exception
     {
