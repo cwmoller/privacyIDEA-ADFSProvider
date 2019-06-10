@@ -6,11 +6,10 @@ namespace privacyIDEAADFSProvider
 {
     internal class AdapterMetadata : IAuthenticationAdapterMetadata
     {
-        public string adapterversion { get; set; }
         //Returns the name of the provider that will be shown in the AD FS management UI (not visible to end users)
         public string AdminName
         {
-            get { return "privacyIDEA-ADFSProvider_"+adapterversion; }
+            get { return "privacyIDEA MFA provider for ADFS"; }
         }
 
         //Returns an array of strings containing URIs indicating the set of authentication methods implemented by the adapter 
@@ -54,7 +53,7 @@ namespace privacyIDEAADFSProvider
             get
             {
                 Dictionary<int, string> _descriptions = new Dictionary<int, string>();
-                _descriptions.Add(new CultureInfo("en-us").LCID, "privacyIDEA ADFS provider to access the api");
+                _descriptions.Add(new CultureInfo("en-us").LCID, "privacyIDEA ADFS provider to access the API");
                 _descriptions.Add(new CultureInfo("de-de").LCID, "privacyIDEA ADFS Provider zur Bedienung der API.");
                 return _descriptions;
             }
@@ -69,7 +68,7 @@ namespace privacyIDEAADFSProvider
         /// "http://schemas.microsoft.com/ws/2008/06/identity/claims/primarysid"
         public string[] IdentityClaims
         {
-            get { return new[] { "http://schemas.microsoft.com/ws/2008/06/identity/claims/windowsaccountname" }; }
+            get { return new[] { "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/upn" }; }
         }
 
         //All external providers must return a value of "true" for this property.

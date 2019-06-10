@@ -51,7 +51,6 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Adapter.cs" />
-    <Compile Include="AdapterMetadataUPN.cs" />
     <Compile Include="AdapterMetadata.cs" />
     <Compile Include="AdapterPresentationForm.cs" />
     <Compile Include="Helper.cs" />
@@ -68,10 +67,10 @@
     <EmbeddedResource Include="Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+      <SubType>Designer</SubType>
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
-    <Content Include="AuthError.html" />
     <Content Include="AuthPage.html" />
     <None Include="config.xml">
       <SubType>Designer</SubType>

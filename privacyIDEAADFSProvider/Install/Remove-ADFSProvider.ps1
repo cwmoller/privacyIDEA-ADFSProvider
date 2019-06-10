@@ -6,6 +6,7 @@ param (
 
 $location = "C:\Program Files\privacyIDEAProvider"
 $provider = "privacyIDEA-ADFSProvider"
+$file = "${location}\${provider}.dll"
 
 if ($primary) {
 	if ((Get-AdfsGlobalAuthenticationPolicy | Select -ExpandProperty "AdditionalAuthenticationProvider") -contains ${provider}) {
@@ -17,6 +18,6 @@ if ($primary) {
 Set-location ${location}
 [System.Reflection.Assembly]::Load("System.EnterpriseServices, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")
 $publish = New-Object System.EnterpriseServices.Internal.Publish
-$publish.GacRemove("${location}\privacyIDEA-ADFSProvider.dll")
+$publish.GacRemove("${file}")
 
 Restart-Service adfssrv

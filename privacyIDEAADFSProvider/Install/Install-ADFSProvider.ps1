@@ -6,7 +6,7 @@ param (
 
 $location = "C:\Program Files\privacyIDEAProvider"
 $provider = "privacyIDEA-ADFSProvider"
-$version = "1.3.4.2"
+$file = "${location}\${provider}.dll"
 
 function Gac-Util
 {
@@ -44,7 +44,9 @@ if (!([System.Diagnostics.EventLog]::SourceExists("privacyIDEAProvider")))
 }
 
 Set-location ${location}
-Gac-Util "${location}\privacyIDEA-ADFSProvider.dll"
+Gac-Util "${file}"
+
+$version = [System.Diagnostics.FileVersionInfo]::GetVersionInfo("${file}").FileVersion
 
 if ($primary) {
 	$typeName = "privacyIDEAADFSProvider.Adapter, ${provider}, Version=${version}, Culture=neutral, PublicKeyToken=a11686e933c2d195"

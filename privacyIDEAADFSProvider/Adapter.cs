@@ -6,71 +6,59 @@ using System.Text;
 using System.Diagnostics;
 using System.Xml.Serialization;
 using System.Collections.Generic;
-
-// old b6483f285cb7b6eb
-// new bf6bdb60967d5ecc 1.3.2
+using System;
 
 namespace privacyIDEAADFSProvider
 {
     public class Adapter : IAuthenticationAdapter
     {
-        public const string debugPrefix = "ID3A_ADFSadapter: ";
-        private string version = typeof(Adapter).Assembly.GetName().Version.ToString();
-        // TODO: Create a property class
-        private string privacyIDEAurl;
-        public string privacyIDEArealm;
+        private string privacyIDEAurl = "";
+        private string privacyIDEArealm = "";
         private string transaction_id = "";
         private bool ssl = true;
-        private string token;
-        private string admin_user;
-        private string admin_pw;
-        public ADFSinterface[] uidefinition;
+        private string token = "";
+        private string admin_user = "";
+        private string admin_pw = "";
+        private ADFSinterface[] uidefinition;
         private OTPprovider otp_prov;
 
         public IAuthenticationAdapterMetadata Metadata
         {
-            get { return new AdapterMetadataUPN(); }
+            get { return new AdapterMetadata(); }
         }
         /// <summary>
         /// Initiates a new authentication process and returns to the ADFS system.
         /// </summary>
         /// <param name="identityClaim">Claim information from the ADFS</param>
-        /// <param name="request">The http request</param>
+        /// <param name="request">The HTTP request</param>
         /// <param name="authContext">The context for the authentication</param>
         /// <returns>new instance of IAdapterPresentationForm</returns>
         public IAdapterPresentation BeginAuthentication(Claim identityClaim, HttpListenerRequest request, IAuthenticationContext authContext)
         {
 #if DEBUG
-            Debug.WriteLine(System.String.Format("{0} BeginAuthentication() claim value {1})", debugPrefix, identityClaim.Value));
+            Debug.WriteLine($"{Helper.debugPrefix} BeginAuthentication() claim value {identityClaim.Value}");
 #endif
-            // seperates the username from the domain
-            // TODO: Map the domain to the ID3A realm
-            string[] tmp = identityClaim.Value.Split('\\');
-            string username = "";
-            if(tmp.Length > 1) username = tmp[1];
-            else username = tmp[0];
-            // check if ssl is disabled in the config
-            // TODO: Delete for security reasons 
+            // check whether SSL validation is disabled in the config
             if (!ssl) ServicePointManager.ServerCertificateValidationCallback += (sender, certificate, chain, sslPolicyErrors) => true;
 
              // trigger challenge
             otp_prov = new OTPprovider(privacyIDEAurl);
-            // get a new admin token for all requests if the an admin pw is defined
-            // #2
+            // get a new admin token for all requests if an admin password is defined
             if (!string.IsNullOrEmpty(admin_pw) && !string.IsNullOrEmpty(admin_user))
             {
                 token = otp_prov.getAuthToken(admin_user, admin_pw);
                 // trigger a challenge (SMS, Mail ...) for the the user
-                if (otp_prov.hasToken(username, privacyIDEArealm, token))
+                if (otp_prov.hasToken(identityClaim.Value, privacyIDEArealm, token))
                 {
-                    transaction_id = otp_prov.triggerChallenge(username, privacyIDEArealm, token);
+                    transaction_id = otp_prov.triggerChallenge(identityClaim.Value, privacyIDEArealm, token);
+                    authContext.Data.Add("transaction_id", transaction_id);
                 }
                 else
                 {
-                    // register a token
-                    Dictionary <string, string> QR = otp_prov.enrollHOTPToken(username, privacyIDEArealm, token);
+                    // register a token, get QR code
+                    Dictionary <string, string> QR = otp_prov.enrollTOTPToken(identityClaim.Value, privacyIDEArealm, token);
 #if DEBUG
-                    Debug.WriteLine(System.String.Format("{0} BeginAuthentication() QR {1})", debugPrefix, Helper.ToDebugString(QR)));
+                    Debug.WriteLine($"{Helper.debugPrefix} BeginAuthentication() QR {Helper.ToDebugString(QR)}");
 #endif
                     if (QR.ContainsKey("googleurl"))
                     {
@@ -78,29 +66,25 @@ namespace privacyIDEAADFSProvider
                     }
                 }
             }
-            // set vars to context - fix for 14 and 15
-            authContext.Data.Add("userid", username);
+            authContext.Data.Add("userid", identityClaim.Value);
             authContext.Data.Add("realm", privacyIDEArealm);
-            authContext.Data.Add("transaction_id", transaction_id);
 
-            return new AdapterPresentationForm(false, uidefinition);
+            return new AdapterPresentationForm(uidefinition, authContext);
         }
 
-        // TODO remove ?
         public bool IsAvailableForUser(Claim identityClaim, IAuthenticationContext authContext)
         {
-            return true; //its all available for now
+            return true;
         }
 
         public void OnAuthenticationPipelineLoad(IAuthenticationMethodConfigData configData)
         {
             //this is where AD FS passes us the config data, if such data was supplied at registration of the adapter
-            if (configData != null)
+            if ((configData != null) && (configData.Data != null))
             {
-                if (configData.Data != null)
+                try
                 {
                     // load the config file
-                    // TODO: Handle errors and exceptions
                     using (StreamReader reader = new StreamReader(configData.Data, Encoding.UTF8))
                     {
                         XmlRootAttribute xRoot = new XmlRootAttribute
@@ -112,17 +96,24 @@ namespace privacyIDEAADFSProvider
                         ADFSserver server_config = (ADFSserver)serializer.Deserialize(reader);
                         admin_pw = server_config.adminpw;
                         admin_user = server_config.adminuser;
-                        ssl = server_config.ssl.ToLower() == "false" ? false : true;
+                        ssl = server_config.ssl.ToLower() == "true";
                         privacyIDEArealm = server_config.realm;
                         privacyIDEAurl = server_config.url;
                         uidefinition = server_config.@interface;
                     }
                 }
+                catch (Exception ex)
+                {
+#if DEBUG
+                    Debug.WriteLine($"{Helper.debugPrefix} OnAuthenticationPipelineLoad() exception: {ex.Message}");
+#endif
+                    Helper.LogEvent($"OnAuthenticationPipelineLoad() exception: {ex.Message}", EventLogEntryType.Error);
+                }
             }
-            //otp_prov.LogEvent(EventContext.ID3Aprovider, string.Format("Successfully loaded version {0}", System.Reflection.Assembly.GetEntryAssembly().GetName().Version), EventLogEntryType.Information);
+            Helper.LogEvent($"Successfully loaded version {System.Reflection.Assembly.GetEntryAssembly().GetName().Version}", EventLogEntryType.Information);
         }
         /// <summary>
-        /// cleanup function - nothing to do her
+        /// cleanup function - nothing to do here
         /// </summary>
         public void OnAuthenticationPipelineUnload()
         {
@@ -130,7 +121,7 @@ namespace privacyIDEAADFSProvider
         /// <summary>
         /// Called on error and represents the authform with a error message
         /// </summary>
-        /// <param name="request">the http request object</param>
+        /// <param name="request">the HTTP request object</param>
         /// <param name="ex">exception message</param>
         /// <returns>new instance of IAdapterPresentationForm derived class</returns>
         public IAdapterPresentation OnError(HttpListenerRequest request, ExternalAuthenticationException ex)
@@ -166,38 +157,40 @@ namespace privacyIDEAADFSProvider
         }
 
         /// <summary>
-        /// Check the OTP an does the real authentication
+        /// Check the OTP and do the real authentication
         /// </summary>
-        /// <param name="proofData">the date from the HTML fild</param>
-        /// <param name="authContext">The autch context which contains secrued parametes.</param>
+        /// <param name="proofData">the data from the HTML field</param>
+        /// <param name="authContext">The auth context which contains secured parametes</param>
         /// <returns>True if auth is done and user can be validated</returns>
         private bool ValidateProofData(IProofData proofData, IAuthenticationContext authContext)
         {
             if (proofData == null || proofData.Properties == null || !proofData.Properties.ContainsKey("otpvalue"))
-                   throw new ExternalAuthenticationException("Error - no answer found", authContext);
+            {
+                throw new ExternalAuthenticationException($"ValidateProofData() OTP not found", authContext);
+            }
 
             if (!ssl)
-                   ServicePointManager.ServerCertificateValidationCallback += (sender, certificate, chain, sslPolicyErrors) => true;
+            {
+                ServicePointManager.ServerCertificateValidationCallback += (sender, certificate, chain, sslPolicyErrors) => true;
+            }
 
             try
             {
                 string otpvalue = (string)proofData.Properties["otpvalue"];
-                // fix for #14 and #15
                 string session_user = (string)authContext.Data["userid"];
                 string session_realm = (string)authContext.Data["realm"];
-                string transaction_id = (authContext.Data.ContainsKey("transaction_id")) ? (string)authContext.Data["transaction_id"] : "";
-                // end fix
+                string transaction_id = authContext.Data.ContainsKey("transaction_id") ? (string)authContext.Data["transaction_id"] : "";
 #if DEBUG
-                Debug.WriteLine(System.String.Format("{0} ValidateProofData() user {1}, OTP {2}, realm {3}, transaction {4})", debugPrefix, session_user, otpvalue, session_realm, transaction_id));
+                Debug.WriteLine($"{Helper.debugPrefix} ValidateProofData() user {session_user}, OTP {otpvalue}, realm {session_realm}, transaction {transaction_id}");
 #endif
-                return otp_prov.getAuthOTP(session_user, otpvalue, session_realm, transaction_id);
+                return otp_prov.validateOTP(session_user, otpvalue, session_realm, transaction_id);
             }
-            catch (System.Exception ex)
+            catch (Exception ex)
             {
 #if DEBUG
-                Debug.WriteLine(System.String.Format("{0} ValidateProofData() exception: {1})", debugPrefix, ex.Message));
+                Debug.WriteLine($"{Helper.debugPrefix} ValidateProofData() exception: {ex.Message}");
 #endif
-                throw new ExternalAuthenticationException("Error - can't validate the otp value", authContext);
+                throw new ExternalAuthenticationException($"ValidateProofData() exception: {ex.Message}", authContext);
             }
         }
 
