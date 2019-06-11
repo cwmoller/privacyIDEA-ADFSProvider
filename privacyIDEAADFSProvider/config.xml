@@ -1,14 +1,15 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
 <server>
   <!-- Server configuration for the privacyIDEA system -->
-  <url>https://192.168.230.126</url>
+  <url>https://pi.fqdn</url>
   <!-- define the realm at the privacyIDEA for the ADFS authentication-->
   <realm>adfs</realm>
   <!-- false = ssl cert check disable / true = ssl cert check enabled -->
-  <ssl>false</ssl>
+  <ssl>true</ssl>
   <!-- 
       Provide a administrative user and password for the API.
-      Only needed if a challenge must be triggered (e.g. Email or SMS token)!
+      Only needed if a challenge must be triggered (e.g. Email or SMS token),
+      or we want to do inline registration of TOTP.
       If not -> left blank.
   -->
   <adminuser></adminuser>
@@ -20,7 +21,7 @@
   -->
   <interface LICD="1033">
     <errormessage>Login failed! Please try again!</errormessage>
-    <wellcomemessage>Please provide the one-time-password:</wellcomemessage>
+    <wellcomemessage>Please provide the One Time Password:</wellcomemessage>
   </interface>
   <interface LICD="1031">
     <errormessage>Login fehlgeschlagen. Bitte versuchen Sie es erneut!</errormessage>

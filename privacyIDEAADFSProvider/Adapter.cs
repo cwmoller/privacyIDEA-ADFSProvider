@@ -110,7 +110,6 @@ namespace privacyIDEAADFSProvider
                     Helper.LogEvent($"OnAuthenticationPipelineLoad() exception: {ex.Message}", EventLogEntryType.Error);
                 }
             }
-            Helper.LogEvent($"Successfully loaded version {System.Reflection.Assembly.GetEntryAssembly().GetName().Version}", EventLogEntryType.Information);
         }
         /// <summary>
         /// cleanup function - nothing to do here
