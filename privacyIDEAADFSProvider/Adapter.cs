@@ -20,7 +20,7 @@ namespace privacyIDEAADFSProvider
         private string admin_user = "";
         private string admin_pw = "";
         private ADFSinterface[] uidefinition;
-        private OTPprovider otp_prov;
+        private OTPprovider otp_prov = null;
 
         public IAuthenticationAdapterMetadata Metadata
         {
@@ -41,7 +41,7 @@ namespace privacyIDEAADFSProvider
             // check whether SSL validation is disabled in the config
             if (!ssl) ServicePointManager.ServerCertificateValidationCallback += (sender, certificate, chain, sslPolicyErrors) => true;
 
-             // trigger challenge
+            // trigger challenge
             otp_prov = new OTPprovider(privacyIDEAurl);
             // get a new admin token for all requests if an admin password is defined
             if (!string.IsNullOrEmpty(admin_pw) && !string.IsNullOrEmpty(admin_user))
@@ -145,7 +145,7 @@ namespace privacyIDEAADFSProvider
                 {
                      // Return the required authentication method claim, indicating the particulate authentication method used.
                      new Claim( "http://schemas.microsoft.com/ws/2008/06/identity/claims/authenticationmethod", "http://schemas.microsoft.com/ws/2012/12/authmethod/otp")
-                 };
+                };
                 return null;
             }
             else
@@ -182,6 +182,11 @@ namespace privacyIDEAADFSProvider
 #if DEBUG
                 Debug.WriteLine($"{Helper.debugPrefix} ValidateProofData() user {session_user}, OTP {otpvalue}, realm {session_realm}, transaction {transaction_id}");
 #endif
+                // if we're running a server farm and BeginAuthentication was called on a different server
+                if (otp_prov is null)
+                {
+                    otp_prov = new OTPprovider(privacyIDEAurl);
+                }
                 return otp_prov.validateOTP(session_user, otpvalue, session_realm, transaction_id);
             }
             catch (Exception ex)
