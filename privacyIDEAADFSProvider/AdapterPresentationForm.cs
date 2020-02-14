@@ -1,32 +1,34 @@
 ﻿using Microsoft.IdentityServer.Web.Authentication.External;
 using System.Diagnostics;
+using System.Globalization;
 
 namespace privacyIDEAADFSProvider
 {
     internal class AdapterPresentationForm : IAdapterPresentationForm
     {
         public ADFSinterface[] inter;
-        private IAuthenticationContext authContext = null;
-        private bool error = false;
+        private IAuthenticationContext AuthContext { get; set; }
+        private bool Error { get; set; }
         
         public AdapterPresentationForm(bool error, ADFSinterface[] adfsinter)
         {
-            this.error = error;
+            this.Error = error;
             inter = adfsinter;
         }
 
         public AdapterPresentationForm(ADFSinterface[] adfsinter, IAuthenticationContext authContext)
         {
             inter = adfsinter;
-            this.authContext = authContext;
+            this.AuthContext = authContext;
         }
+
 
         /// Returns the HTML Form fragment that contains the adapter user interface. This data will be included in the web page that is presented
         /// to the cient.
         public string GetFormHtml(int lcid)
         {
 #if DEBUG
-            Debug.WriteLine($"{Helper.debugPrefix} GetFormHtml({lcid}), authContext isNull {authContext == null})");
+            Debug.WriteLine($"{Helper.debugPrefix} GetFormHtml({lcid}), AuthContext isNull {AuthContext == null})");
 #endif
 
             // check the localization with the lcid
@@ -38,25 +40,25 @@ namespace privacyIDEAADFSProvider
             {
                 foreach (ADFSinterface adfsui in inter)
                 {
-                    if (adfsui.LICD == lcid.ToString())
+                    if (int.Parse(adfsui.LICD, new CultureInfo(lcid)) == lcid)
                     {
-                        errormessage = error ? adfsui.errormessage : "";
+                        errormessage = Error ? adfsui.errormessage : "";
                         welcomemessage = adfsui.wellcomemessage;
                     }
                     // fallback to EN-US if nothing is defined
                     else
                     {
-                        errormessage = error ? "Login failed! Please try again!" : "";
+                        errormessage = Error ? "Login failed! Please try again!" : "";
                         welcomemessage = "Please provide the One Time Password:";
                     }
                 }
             }
-            if (!error)
+            if (!Error)
             {
-                if ((authContext != null) && (authContext.Data.ContainsKey("qrcode")))
+                if ((AuthContext != null) && (AuthContext.Data.ContainsKey("qrcode")))
                 {
                     errormessage = "You have not registered a One Time Password yet. Please scan the QR code below with a mobile app (Google Authenticator, Microsoft Authenticator, Authy, etc) to register for OTP.";
-                    htmlTemplate = htmlTemplate.Replace("<!--#QRCODE-->", string.Format("<img style=\"max-width: 100%\" src=\"{0}\" />", authContext.Data["qrcode"]));
+                    htmlTemplate = htmlTemplate.Replace("<!--#QRCODE-->", string.Format(new CultureInfo(lcid), "<img style=\"max-width: 100%\" src=\"{0}\" />", AuthContext.Data["qrcode"]));
                 }
             }
             htmlTemplate = htmlTemplate.Replace("#MESSAGE#", welcomemessage);

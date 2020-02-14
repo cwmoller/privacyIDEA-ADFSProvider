@@ -38,9 +38,11 @@ namespace privacyIDEAADFSProvider
         {
             get
             {
-                Dictionary<int, string> _friendlyNames = new Dictionary<int, string>();
-                _friendlyNames.Add(new CultureInfo("en-us").LCID, "privacyIDEA ADFS authentication provider");
-                _friendlyNames.Add(new CultureInfo("de-de").LCID, "privacyIDEA ADFS Authentikationsprovider");
+                Dictionary<int, string> _friendlyNames = new Dictionary<int, string>
+                {
+                    { new CultureInfo("en-us").LCID, "privacyIDEA ADFS authentication provider" },
+                    { new CultureInfo("de-de").LCID, "privacyIDEA ADFS Authentikationsprovider" }
+                };
                 return _friendlyNames;
             }
         }
@@ -52,9 +54,11 @@ namespace privacyIDEAADFSProvider
         {
             get
             {
-                Dictionary<int, string> _descriptions = new Dictionary<int, string>();
-                _descriptions.Add(new CultureInfo("en-us").LCID, "privacyIDEA ADFS provider to access the API");
-                _descriptions.Add(new CultureInfo("de-de").LCID, "privacyIDEA ADFS Provider zur Bedienung der API.");
+                Dictionary<int, string> _descriptions = new Dictionary<int, string>
+                {
+                    { new CultureInfo("en-us").LCID, "privacyIDEA ADFS provider to access the API" },
+                    { new CultureInfo("de-de").LCID, "privacyIDEA ADFS Provider zur Bedienung der API." }
+                };
                 return _descriptions;
             }
         }

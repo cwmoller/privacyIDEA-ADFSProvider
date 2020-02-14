@@ -45,19 +45,23 @@ namespace privacyIDEAADFSProvider
         /// <param name="jsonResponse">JSON string</param>
         /// <param name="nodename">node name of the JSON field</param>
         /// <returns>returns the value (inner text) from the defined node</returns>
-        public static string getJsonNode(string jsonResponse, string nodename)
+        public static string GetJsonNode(string jsonResponse, string nodename)
         {
             try
             {
-                var xml = XDocument.Load(JsonReaderWriterFactory.CreateJsonReader(Encoding.ASCII.GetBytes(jsonResponse), new XmlDictionaryReaderQuotas()));
+                XmlDictionaryReader reader = JsonReaderWriterFactory.CreateJsonReader(Encoding.ASCII.GetBytes(jsonResponse), new XmlDictionaryReaderQuotas());
+                XDocument xml = XDocument.Load(reader);
+                reader.Dispose();
                 return xml.Descendants(nodename).Single().Value;
             }
+#pragma warning disable CA1031 // Do not catch general exception types
             catch (Exception ex)
+#pragma warning restore CA1031 // Do not catch general exception types
             {
 #if DEBUG
-                Debug.WriteLine($"{debugPrefix} getJsonNode() exception: {ex.Message}");
+                Debug.WriteLine($"{debugPrefix} GetJsonNode() exception: {ex.Message}");
 #endif
-                LogEvent($"getJsonNode() exception: {ex.Message}", EventLogEntryType.Error);
+                LogEvent($"GetJsonNode() exception: {ex.Message}", EventLogEntryType.Error);
                 return "";
             }
         }
@@ -67,10 +71,12 @@ namespace privacyIDEAADFSProvider
         /// </summary>
         /// <param name="jsonResponse">JSON string</param>
         /// <returns></returns>
-        public static Dictionary<string, string> getQRimage(string jsonResponse)
+        public static Dictionary<string, string> GetQRimage(string jsonResponse)
         {
             Dictionary<string, string> imgs = new Dictionary<string, string>();
-            var xml = XDocument.Load(JsonReaderWriterFactory.CreateJsonReader(Encoding.ASCII.GetBytes(jsonResponse), new XmlDictionaryReaderQuotas()));
+            XmlDictionaryReader reader = JsonReaderWriterFactory.CreateJsonReader(Encoding.ASCII.GetBytes(jsonResponse), new XmlDictionaryReaderQuotas());
+            XDocument xml = XDocument.Load(reader);
+            reader.Dispose();
             foreach (XElement element in xml.Descendants("img"))
             {
                 imgs.Add(element.Parent.Name.ToString(), element.Value);

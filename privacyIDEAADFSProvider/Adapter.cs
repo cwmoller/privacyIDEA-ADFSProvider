@@ -7,6 +7,9 @@ using System.Diagnostics;
 using System.Xml.Serialization;
 using System.Collections.Generic;
 using System;
+using System.Xml;
+using System.Globalization;
+using System.Reflection;
 
 namespace privacyIDEAADFSProvider
 {
@@ -35,28 +38,42 @@ namespace privacyIDEAADFSProvider
         /// <returns>new instance of IAdapterPresentationForm</returns>
         public IAdapterPresentation BeginAuthentication(Claim identityClaim, HttpListenerRequest request, IAuthenticationContext authContext)
         {
+            if (identityClaim is null)
+            {
+                identityClaim = new Claim(Metadata.IdentityClaims[0], "user@domain.com");
+            }
+            if (authContext is null)
+            {
+                authContext = new AuthenticationContext();
+            }
 #if DEBUG
             Debug.WriteLine($"{Helper.debugPrefix} BeginAuthentication() claim value {identityClaim.Value}");
 #endif
+
             // check whether SSL validation is disabled in the config
-            if (!ssl) ServicePointManager.ServerCertificateValidationCallback += (sender, certificate, chain, sslPolicyErrors) => true;
+            if (!ssl)
+            {
+#pragma warning disable CA5359 // Do Not Disable Certificate Validation
+                ServicePointManager.ServerCertificateValidationCallback += (sender, certificate, chain, sslPolicyErrors) => true;
+#pragma warning restore CA5359 // Do Not Disable Certificate Validation
+            }
 
             // trigger challenge
             otp_prov = new OTPprovider(privacyIDEAurl);
             // get a new admin token for all requests if an admin password is defined
             if (!string.IsNullOrEmpty(admin_pw) && !string.IsNullOrEmpty(admin_user))
             {
-                token = otp_prov.getAuthToken(admin_user, admin_pw);
+                token = otp_prov.GetAuthToken(admin_user, admin_pw);
                 // trigger a challenge (SMS, Mail ...) for the the user
-                if (otp_prov.hasToken(identityClaim.Value, privacyIDEArealm, token))
+                if (otp_prov.HasToken(identityClaim.Value, privacyIDEArealm, token))
                 {
-                    transaction_id = otp_prov.triggerChallenge(identityClaim.Value, privacyIDEArealm, token);
+                    transaction_id = otp_prov.TriggerChallenge(identityClaim.Value, privacyIDEArealm, token);
                     authContext.Data.Add("transaction_id", transaction_id);
                 }
                 else
                 {
                     // register a token, get QR code
-                    Dictionary <string, string> QR = otp_prov.enrollTOTPToken(identityClaim.Value, privacyIDEArealm, token);
+                    Dictionary <string, string> QR = otp_prov.EnrollTOTPToken(identityClaim.Value, privacyIDEArealm, token);
 #if DEBUG
                     Debug.WriteLine($"{Helper.debugPrefix} BeginAuthentication() QR {Helper.ToDebugString(QR)}");
 #endif
@@ -79,6 +96,10 @@ namespace privacyIDEAADFSProvider
 
         public void OnAuthenticationPipelineLoad(IAuthenticationMethodConfigData configData)
         {
+#if DEBUG
+            Debug.WriteLine($"{Helper.debugPrefix} Loading version {Assembly.GetExecutingAssembly().GetName().Version.ToString()}");
+#endif
+
             //this is where AD FS passes us the config data, if such data was supplied at registration of the adapter
             if ((configData != null) && (configData.Data != null))
             {
@@ -93,16 +114,20 @@ namespace privacyIDEAADFSProvider
                             IsNullable = true
                         };
                         XmlSerializer serializer = new XmlSerializer(typeof(ADFSserver), xRoot);
-                        ADFSserver server_config = (ADFSserver)serializer.Deserialize(reader);
+                        XmlReader xmlreader = XmlReader.Create(reader);
+                        ADFSserver server_config = (ADFSserver)serializer.Deserialize(xmlreader);
+                        xmlreader.Dispose();
                         admin_pw = server_config.adminpw;
                         admin_user = server_config.adminuser;
-                        ssl = server_config.ssl.ToLower() == "true";
+                        ssl = server_config.ssl.ToLower(new CultureInfo(Metadata.AvailableLcids[0])) == "true";
                         privacyIDEArealm = server_config.realm;
                         privacyIDEAurl = server_config.url;
                         uidefinition = server_config.@interface;
                     }
                 }
+#pragma warning disable CA1031 // Do not catch general exception types
                 catch (Exception ex)
+#pragma warning restore CA1031 // Do not catch general exception types
                 {
 #if DEBUG
                     Debug.WriteLine($"{Helper.debugPrefix} OnAuthenticationPipelineLoad() exception: {ex.Message}");
@@ -137,6 +162,10 @@ namespace privacyIDEAADFSProvider
         /// <returns></returns>
         public IAdapterPresentation TryEndAuthentication(IAuthenticationContext authContext, IProofData proofData, HttpListenerRequest request, out Claim[] outgoingClaims)
         {
+            if (authContext is null)
+            {
+                authContext = new AuthenticationContext();
+            }
 #if DEBUG
             Debug.WriteLine($"{Helper.debugPrefix} TryEndAuthentication()");
 #endif
@@ -166,14 +195,21 @@ namespace privacyIDEAADFSProvider
         /// <returns>True if auth is done and user can be validated</returns>
         private bool ValidateProofData(IProofData proofData, IAuthenticationContext authContext)
         {
+            if (authContext is null)
+            {
+                authContext = new AuthenticationContext();
+            }
+
             if (proofData == null || proofData.Properties == null || !proofData.Properties.ContainsKey("otpvalue"))
             {
-                throw new ExternalAuthenticationException($"ValidateProofData() OTP not found", authContext);
+                throw new ExternalAuthenticationException($"ValidateProofData() OTP not found for {authContext.Data["userid"]}", authContext);
             }
 
             if (!ssl)
             {
+#pragma warning disable CA5359 // Do Not Disable Certificate Validation
                 ServicePointManager.ServerCertificateValidationCallback += (sender, certificate, chain, sslPolicyErrors) => true;
+#pragma warning restore CA5359 // Do Not Disable Certificate Validation
             }
 
             try
@@ -190,7 +226,7 @@ namespace privacyIDEAADFSProvider
                 {
                     otp_prov = new OTPprovider(privacyIDEAurl);
                 }
-                return otp_prov.validateOTP(session_user, otpvalue, session_realm, transaction_id);
+                return otp_prov.ValidateOTP(session_user, otpvalue, session_realm, transaction_id);
             }
             catch (Exception ex)
             {

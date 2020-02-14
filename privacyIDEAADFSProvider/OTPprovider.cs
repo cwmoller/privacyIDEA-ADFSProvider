@@ -11,7 +11,8 @@ namespace privacyIDEAADFSProvider
 {
     public class OTPprovider
     {
-        private string URL;
+        private string URL { get; set; }
+
         /// <summary>
         /// Class creates a OTPprovider for the privacyIDEA system
         /// </summary>
@@ -27,12 +28,12 @@ namespace privacyIDEAADFSProvider
         /// <param name="OTPuser">User name for the token</param>
         /// <param name="OTPpin">PIN for validation</param>
         /// <param name="realm">Domain/realm name</param>
-        /// <param name="transaction_id">ID for the coresponding challenge</param>
+        /// <param name="transactionID">ID for the corresponding challenge</param>
         /// <returns>true if the pin is correct</returns>
-        public bool validateOTP(string OTPuser, string OTPpin, string realm, string transaction_id)
+        public bool ValidateOTP(string OTPuser, string OTPpin, string realm, string transactionID)
         {
 #if DEBUG
-            Debug.WriteLine($"{debugPrefix} validateOTP({OTPuser}, {OTPpin}, {realm}, {transaction_id})");
+            Debug.WriteLine($"{debugPrefix} ValidateOTP({OTPuser}, {OTPpin}, {realm}, {transactionID})");
 #endif
             string responseString = "";
             byte[] response;
@@ -44,7 +45,7 @@ namespace privacyIDEAADFSProvider
                 {"realm", realm}
             };
             // add transaction_id if challenge request
-            if (!string.IsNullOrEmpty(transaction_id)) request_header.Add("transaction_id", transaction_id);
+            if (!string.IsNullOrEmpty(transactionID)) request_header.Add("transaction_id", transactionID);
 
             do {
                 try
@@ -55,14 +56,14 @@ namespace privacyIDEAADFSProvider
                         response = client.UploadValues($"{URL}/validate/check", request_header);
                         responseString = Encoding.UTF8.GetString(response);
                     }
-                    return (getJsonNode(responseString, "status") == "true" && getJsonNode(responseString, "value") == "true");
+                    return (GetJsonNode(responseString, "status") == "true" && GetJsonNode(responseString, "value") == "true");
                 }
                 catch (WebException wex)
                 {
 #if DEBUG
-                    Debug.WriteLine($"{debugPrefix} validateOTP() exception(try=={4-retries}): {wex.Message}");
+                    Debug.WriteLine($"{debugPrefix} ValidateOTP() exception(try=={4-retries}): {wex.Message}");
 #endif
-                    LogEvent($"validateOTP() exception(try=={4-retries}): {wex.Message}", EventLogEntryType.Error);
+                    LogEvent($"ValidateOTP() exception(try=={4-retries}): {wex.Message}", EventLogEntryType.Error);
                 }
                 Thread.Sleep(100);
             } while (retries-- > 0);
@@ -76,10 +77,10 @@ namespace privacyIDEAADFSProvider
         /// <param name="realm">Domain/realm name</param>
         /// <param name="token">Admin token</param>
         /// <returns>true or false</returns>
-        public bool hasToken(string OTPuser, string realm, string token)
+        public bool HasToken(string OTPuser, string realm, string token)
         {
 #if DEBUG
-            Debug.WriteLine($"{debugPrefix} hasToken({OTPuser}, {realm}, {token})");
+            Debug.WriteLine($"{debugPrefix} HasToken({OTPuser}, {realm}, {token})");
 #endif
             string request;
             string responseString = "";
@@ -95,17 +96,17 @@ namespace privacyIDEAADFSProvider
                         client.Headers.Set("Authorization", token);
                         request = $"{URL}/token/?user={Uri.EscapeDataString(OTPuser)}&realm={Uri.EscapeDataString(realm)}";
 #if DEBUG
-                        Debug.WriteLine($"{debugPrefix} hasToken() request: {request}");
+                        Debug.WriteLine($"{debugPrefix} HasToken() request: {request}");
 #endif
                         response = client.DownloadData(request);
                         responseString = Encoding.UTF8.GetString(response);
 #if DEBUG
-                        Debug.WriteLine($"{debugPrefix} hasToken() responseString: {responseString}");
+                        Debug.WriteLine($"{debugPrefix} HasToken() responseString: {responseString}");
 #endif
                         // get list from response
-                        data = getJsonNode(responseString, "tokens");
+                        data = GetJsonNode(responseString, "tokens");
 #if DEBUG
-                        Debug.WriteLine($"{debugPrefix} hasToken() tokens: {data}");
+                        Debug.WriteLine($"{debugPrefix} HasToken() tokens: {data}");
 #endif
                         return (data.Length > 0);
                     }
@@ -113,9 +114,9 @@ namespace privacyIDEAADFSProvider
                 catch (WebException wex)
                 {
 #if DEBUG
-                    Debug.WriteLine($"{debugPrefix} hasToken() exception(try=={4-retries}): {wex.Message}");
+                    Debug.WriteLine($"{debugPrefix} HasToken() exception(try=={4-retries}): {wex.Message}");
 #endif
-                    LogEvent($"hasToken() exception(try=={4-retries}): {wex.Message}", EventLogEntryType.Error);
+                    LogEvent($"HasToken() exception(try=={4-retries}): {wex.Message}", EventLogEntryType.Error);
                 }
                 Thread.Sleep(100);
             } while (retries-- > 0);
@@ -129,7 +130,7 @@ namespace privacyIDEAADFSProvider
         /// <param name="realm">Domain/realm name</param>
         /// <param name="token">Admin token</param>
         /// <returns>string transaction_id for the challenge</returns>
-        public string triggerChallenge(string OTPuser, string realm, string token)
+        public string TriggerChallenge(string OTPuser, string realm, string token)
         {
             string responseString = "";
             byte[] response;
@@ -150,7 +151,7 @@ namespace privacyIDEAADFSProvider
                         response = client.UploadValues($"{URL}/validate/triggerchallenge", request_header);
                         responseString = Encoding.UTF8.GetString(response);
                         // get transaction id from response
-                        transaction_id = getJsonNode(responseString, "transaction_ids");
+                        transaction_id = GetJsonNode(responseString, "transaction_ids");
                         if (transaction_id.Length > 20) transaction_id = transaction_id.Remove(20);
                         // check if use has challenge token
                         return transaction_id;
@@ -159,9 +160,9 @@ namespace privacyIDEAADFSProvider
                 catch (WebException wex)
                 {
 #if DEBUG
-                    Debug.WriteLine($"{debugPrefix} triggerChallenge() exception(try=={4-retries}): {wex.Message}");
+                    Debug.WriteLine($"{debugPrefix} TriggerChallenge() exception(try=={4-retries}): {wex.Message}");
 #endif
-                    LogEvent($"triggerChallenge() exception(try=={4-retries}): {wex.Message}", EventLogEntryType.Error);
+                    LogEvent($"TriggerChallenge() exception(try=={4-retries}): {wex.Message}", EventLogEntryType.Error);
                 }
                 Thread.Sleep(100);
             } while (retries-- > 0);
@@ -171,18 +172,18 @@ namespace privacyIDEAADFSProvider
         /// <summary>
         /// Requests a admin token for administrative tasks
         /// </summary>
-        /// <param name="admin_user">Admin user name</param>
-        /// <param name="admin_pw">Admin password</param>
+        /// <param name="adminUser">Admin user name</param>
+        /// <param name="adminPass">Admin password</param>
         /// <returns>The admin token</returns>
-        public string getAuthToken(string admin_user, string admin_pw)
+        public string GetAuthToken(string adminUser = "", string adminPass = "")
         {
             string responseString = "";
             byte[] response;
             int retries = 3;
 
             NameValueCollection request_header = new NameValueCollection() {
-                { "username", admin_user },
-                { "password", admin_pw }
+                { "username", adminUser },
+                { "password", adminPass }
             };
 
             do {
@@ -193,14 +194,14 @@ namespace privacyIDEAADFSProvider
                         response = client.UploadValues($"{URL}/auth", request_header);
                         responseString = Encoding.UTF8.GetString(response);
                     }
-                    return getJsonNode(responseString, "token");
+                    return GetJsonNode(responseString, "token");
                 }
                 catch (WebException wex)
                 {
 #if DEBUG
-                    Debug.WriteLine($"{debugPrefix} getAuthToken() exception(try=={4-retries}): {wex.Message}");
+                    Debug.WriteLine($"{debugPrefix} GetAuthToken() exception(try=={4-retries}): {wex.Message}");
 #endif
-                    LogEvent($"getAuthToken() exception(try=={4-retries}): {wex.Message}", EventLogEntryType.Error);
+                    LogEvent($"GetAuthToken() exception(try=={4-retries}): {wex.Message}", EventLogEntryType.Error);
                 }
                 Thread.Sleep(100);
             } while (retries-- > 0);
@@ -213,10 +214,10 @@ namespace privacyIDEAADFSProvider
         /// <param name="OTPuser">User name to enroll the token</param>
         /// <param name="token">Admin token</param>
         /// <returns>Base64 coded token QR image</returns>
-        public Dictionary<string, string> enrollTOTPToken(string OTPuser, string realm, string token)
+        public Dictionary<string, string> EnrollTOTPToken(string OTPuser, string realm, string token)
         {
 #if DEBUG
-            Debug.WriteLine($"{debugPrefix} enrollTOTPToken({OTPuser}, {realm}, {token})");
+            Debug.WriteLine($"{debugPrefix} EnrollTOTPToken({OTPuser}, {realm}, {token})");
 #endif
             string responseString = "";
             byte[] response;
@@ -238,17 +239,17 @@ namespace privacyIDEAADFSProvider
                         response = client.UploadValues(URL + "/token/init", request_header);
                         responseString = Encoding.UTF8.GetString(response);
 #if DEBUG
-                        Debug.WriteLine($"{debugPrefix} enrollTOTPToken() {responseString}");
+                        Debug.WriteLine($"{debugPrefix} EnrollTOTPToken() {responseString}");
 #endif
                     }
-                    return getQRimage(responseString);
+                    return GetQRimage(responseString);
                 }
                 catch (WebException wex)
                 {
 #if DEBUG
-                    Debug.WriteLine($"{debugPrefix} enrollTOTPToken() exception(try=={4-retries}): {wex.Message}");
+                    Debug.WriteLine($"{debugPrefix} EnrollTOTPToken() exception(try=={4-retries}): {wex.Message}");
 #endif
-                    LogEvent($"enrollTOTPToken() exception(try=={4-retries}): {wex.Message}", EventLogEntryType.Error);
+                    LogEvent($"EnrollTOTPToken() exception(try=={4-retries}): {wex.Message}", EventLogEntryType.Error);
                 }
                 Thread.Sleep(100);
             } while (retries-- > 0);
@@ -261,10 +262,10 @@ namespace privacyIDEAADFSProvider
         /// <param name="OTPuser">User name to enroll the token</param>
         /// <param name="token">Admin token</param>
         /// <returns>Base64 coded token QR image</returns>
-        public bool enrollSMSToken(string OTPuser, string realm, string phonenumber, string token)
+        public bool EnrollSMSToken(string OTPuser, string realm, string phonenumber, string token)
         {
 #if DEBUG
-            Debug.WriteLine($"{debugPrefix} enrollSMSToken({OTPuser}, {realm}, {phonenumber}, {token})");
+            Debug.WriteLine($"{debugPrefix} EnrollSMSToken({OTPuser}, {realm}, {phonenumber}, {token})");
 #endif
 
             string responseString = "";
@@ -288,17 +289,17 @@ namespace privacyIDEAADFSProvider
                         response = client.UploadValues($"{URL}/token/init", request_header);
                         responseString = Encoding.UTF8.GetString(response);
 #if DEBUG
-                        Debug.WriteLine($"{debugPrefix} enrollSMSToken() {responseString}");
+                        Debug.WriteLine($"{debugPrefix} EnrollSMSToken() {responseString}");
 #endif
                     }
-                    return (getJsonNode(responseString, "status") == "true" && getJsonNode(responseString, "value") == "true");
+                    return (GetJsonNode(responseString, "status") == "true" && GetJsonNode(responseString, "value") == "true");
                 }
                 catch (WebException wex)
                 {
 #if DEBUG
-                    Debug.WriteLine($"{debugPrefix} enrollSMSToken() exception(try=={4-retries}): {wex.Message}");
+                    Debug.WriteLine($"{debugPrefix} EnrollSMSToken() exception(try=={4-retries}): {wex.Message}");
 #endif
-                    LogEvent($"enrollSMSToken() exception(try=={4-retries}): {wex.Message}", EventLogEntryType.Error);
+                    LogEvent($"EnrollSMSToken() exception(try=={4-retries}): {wex.Message}", EventLogEntryType.Error);
                 }
                 Thread.Sleep(100);
             } while (retries-- > 0);
