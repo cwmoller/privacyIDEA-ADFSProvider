@@ -4,6 +4,11 @@ param (
     [switch]$primary = $true 
 )
 
+if (-not (New-Object Security.Principal.WindowsPrincipal([Security.Principal.WindowsIdentity]::GetCurrent())).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
+    Write-Host "Administrator access required"
+    exit 1
+}
+
 $location = "C:\Program Files\privacyIDEAProvider"
 $provider = "privacyIDEA-ADFSProvider"
 $file = "${location}\${provider}.dll"
