@@ -60,9 +60,9 @@ namespace privacyIDEAADFSProvider
                 catch (WebException wex)
                 {
 #if DEBUG
-                    Debug.WriteLine($"{debugPrefix} validateOTP() exception: {wex.Message}");
+                    Debug.WriteLine($"{debugPrefix} validateOTP() exception(try=={4-retries}): {wex.Message}");
 #endif
-                    LogEvent($"validateOTP() exception: {wex.Message}", EventLogEntryType.Error);
+                    LogEvent($"validateOTP() exception(try=={4-retries}): {wex.Message}", EventLogEntryType.Error);
                 }
                 Thread.Sleep(100);
             } while (retries-- > 0);
@@ -113,9 +113,9 @@ namespace privacyIDEAADFSProvider
                 catch (WebException wex)
                 {
 #if DEBUG
-                    Debug.WriteLine($"{debugPrefix} hasToken() exception: {wex.Message}");
+                    Debug.WriteLine($"{debugPrefix} hasToken() exception(try=={4-retries}): {wex.Message}");
 #endif
-                    LogEvent($"hasToken() exception: {wex.Message}", EventLogEntryType.Error);
+                    LogEvent($"hasToken() exception(try=={4-retries}): {wex.Message}", EventLogEntryType.Error);
                 }
                 Thread.Sleep(100);
             } while (retries-- > 0);
@@ -159,9 +159,9 @@ namespace privacyIDEAADFSProvider
                 catch (WebException wex)
                 {
 #if DEBUG
-                    Debug.WriteLine($"{debugPrefix} triggerChallenge() exception: {wex.Message}");
+                    Debug.WriteLine($"{debugPrefix} triggerChallenge() exception(try=={4-retries}): {wex.Message}");
 #endif
-                    LogEvent($"triggerChallenge() exception: {wex.Message}", EventLogEntryType.Error);
+                    LogEvent($"triggerChallenge() exception(try=={4-retries}): {wex.Message}", EventLogEntryType.Error);
                 }
                 Thread.Sleep(100);
             } while (retries-- > 0);
@@ -198,9 +198,9 @@ namespace privacyIDEAADFSProvider
                 catch (WebException wex)
                 {
 #if DEBUG
-                    Debug.WriteLine($"{debugPrefix} getAuthToken() exception: {wex.Message}");
+                    Debug.WriteLine($"{debugPrefix} getAuthToken() exception(try=={4-retries}): {wex.Message}");
 #endif
-                    LogEvent($"getAuthToken() exception: {wex.Message}", EventLogEntryType.Error);
+                    LogEvent($"getAuthToken() exception(try=={4-retries}): {wex.Message}", EventLogEntryType.Error);
                 }
                 Thread.Sleep(100);
             } while (retries-- > 0);
@@ -246,9 +246,9 @@ namespace privacyIDEAADFSProvider
                 catch (WebException wex)
                 {
 #if DEBUG
-                    Debug.WriteLine($"{debugPrefix} enrollTOTPToken() exception: {wex.Message}");
+                    Debug.WriteLine($"{debugPrefix} enrollTOTPToken() exception(try=={4-retries}): {wex.Message}");
 #endif
-                    LogEvent($"enrollTOTPToken() exception: {wex.Message}", EventLogEntryType.Error);
+                    LogEvent($"enrollTOTPToken() exception(try=={4-retries}): {wex.Message}", EventLogEntryType.Error);
                 }
                 Thread.Sleep(100);
             } while (retries-- > 0);
@@ -296,9 +296,9 @@ namespace privacyIDEAADFSProvider
                 catch (WebException wex)
                 {
 #if DEBUG
-                    Debug.WriteLine($"{debugPrefix} enrollSMSToken() exception: {wex.Message}");
+                    Debug.WriteLine($"{debugPrefix} enrollSMSToken() exception(try=={4-retries}): {wex.Message}");
 #endif
-                    LogEvent($"enrollSMSToken() exception: {wex.Message}", EventLogEntryType.Error);
+                    LogEvent($"enrollSMSToken() exception(try=={4-retries}): {wex.Message}", EventLogEntryType.Error);
                 }
                 Thread.Sleep(100);
             } while (retries-- > 0);

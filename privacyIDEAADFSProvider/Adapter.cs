@@ -137,6 +137,9 @@ namespace privacyIDEAADFSProvider
         /// <returns></returns>
         public IAdapterPresentation TryEndAuthentication(IAuthenticationContext authContext, IProofData proofData, HttpListenerRequest request, out Claim[] outgoingClaims)
         {
+#if DEBUG
+            Debug.WriteLine($"{Helper.debugPrefix} TryEndAuthentication()");
+#endif
             outgoingClaims = new Claim[0];
             if (ValidateProofData(proofData, authContext))
             {
